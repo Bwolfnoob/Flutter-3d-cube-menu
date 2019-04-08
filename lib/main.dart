@@ -1,111 +1,209 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
-
 void main() => runApp(MyApp());
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+var x=0.0;
+var y=0.0;
+var h = 200.0;
+var r = h / 2;
+Offset offset = Offset.zero;
+List<Color> cores = [
+  Color.fromRGBO(61, 63, 76, 1),
+  Color.fromRGBO(72, 81, 88, 1),
+  Color.fromRGBO(88, 110, 107, 1),
+  Color.fromRGBO(115, 142, 127, 1),
+  Color.fromRGBO(149, 167, 145, 1),
+  Color.fromRGBO(182, 194, 170, 1),
+  Color.fromRGBO(228, 217, 197, 1),
+  Color.fromRGBO(145, 114, 96, 1),
+  Color.fromRGBO(124, 90, 80, 1),
+  Color.fromRGBO(90, 58, 63, 1),
+  Color.fromRGBO(51, 33, 49, 1),
+  Color.fromRGBO(38, 16, 37, 1),
+];
+
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: '3d Menu Cube',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: Menu()
     );
   }
 }
-
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class Menu extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _MenuState createState() => _MenuState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
+class _MenuState extends State<Menu> {
+  final Matrix4 frente = Matrix4.identity()..setEntry(3, 2, 0.001)..translate(h * sin(pi) * cos(0),h * sin(pi) * sin(0),h * cos(pi) - 50);
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
+    x = offset.dx * 0.013;
+    y = offset.dy * 0.013;
+
+    List<Face> faces = [
+      Face(Page('Perfil', Icons.account_circle, Container(), cores[2], context), x, 0, x, y),
+      Face(Page('Configurações', Icons.settings, ConfigPage(), cores[3], context), -x + pi, pi, x, y),
+      Face(Page('Flutter', Icons.backup, Container(), cores[4], context), x, pi, x - (pi/2), 0, y),
+      Face(Page('Create', Icons.headset, Container(), cores[9], context), x, 0, x - (pi/2), 0, y),
+      Face(Page('Home', Icons.home, Container(), cores[8], context), x, 0, x, y - (pi/2)),
+      Face(Page('BRASIL', Icons.account_circle, Container(), cores[7], context), -x + pi, pi, x, y - (pi/2))
+    ];
+    faces..sort((a, b) => a.matriz.relativeError(frente).compareTo(b.matriz.relativeError(frente)));
+    return GestureDetector(
+      onPanUpdate: (dt) => setState(() { offset = Offset(offset.dx + dt.delta.dy, offset.dy - dt.delta.dx); }),
+      onDoubleTap: () => setState(() { x=0;y=0; offset = Offset.zero; }),
+      child: Scaffold(
+        backgroundColor: cores[0],
+        floatingActionButton: RaisedButton.icon(
+          icon: Icon(faces[0].page.icon),
+          label: Text(faces[0].page.tag),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => Scaffold(backgroundColor: cores[6], body: faces[0].page.maior),))
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        body: Column(
           children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
+            Expanded(
+              child: Center(
+                child: Container(
+                  height: h,
+                  width: h,
+                  child: Stack(
+                    children: faces.reversed.map((face) => Transform(alignment: Alignment.center,transform: face.matriz,child: face.page.menor,)).toList().cast<Widget>(),
+                  ),
+                )
+              )
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class Page {
+  String tag;
+  var icon;
+  Widget child;
+  Color cor;
+  Widget menor;
+  Widget maior;
+  var context;
+  Page(this.tag, this.icon, this.child, this.cor, this.context) {
+    menor = PHero(
+      tag: tag,
+      child: Container(
+        height: h,
+        width: h,
+        color: this.cor,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Text(tag, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),),
+            Container(height: 15,),
+            Icon(icon, size: 30,),
+          ],
+        ),)
+      );
+    maior = PHero(
+      tag: tag,
+      child:Scaffold(
+        backgroundColor: cor,
+        body: ListView(
+          children: <Widget>[
+            Container(height: 25,),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: <Widget>[
+                Icon(icon, size: 30,),
+                Text(tag, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),),
+                IconButton(icon: Icon(Icons.menu, size: 30), onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Menu())),)
+              ],
+            ),
+          ],
+    ),
+      ));
+  }
+}
+
+class PHero extends StatelessWidget {
+  final String tag;
+  final Widget child;
+  const PHero({Key key, this.tag, this.child}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return Hero(
+      tag: tag,
+      child: child,
+    );
+  }
+}
+
+class Face {
+  double teta;
+  double fi;
+  double rtX;
+  double rtY;
+  double rtZ;
+  Matrix4 matriz;
+  Page page;
+  Face(this.page, this.teta, this.fi, [this.rtX = 0, this.rtY = 0, this.rtZ = 0]){
+    matriz = Matrix4.identity()
+    ..setEntry(3, 2, 0.001)
+    ..rotateX(this.rtX)
+    ..rotateY(this.rtY)
+    ..rotateZ(this.rtZ)
+    ..translate(
+      r * sin(this.fi) * cos(this.teta),
+      r * sin(this.fi) * sin(this.teta),
+      r * cos(this.fi)
+    );
+  }
+}
+
+class PageHero extends StatelessWidget {
+  final Widget child;
+  final String tag;
+  const PageHero({Key key, this.tag, this.child}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return Hero(
+      child: Scaffold(
+        body: child, 
+        floatingActionButton: IconButton(
+          icon: Icon(Icons.menu),
+          onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => Menu())),
+        ),
+      ),
+      tag: tag,
+    );
+  }
+}
+
+class ConfigPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return PageHero(
+      tag: 'Config',
+      child: Column(
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.only(top: 25, left: 20),
+            child: Text('Configurações', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
+          )
+        ],
+      )
     );
   }
 }
